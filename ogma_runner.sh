@@ -8,6 +8,6 @@ j=$(echo $i | awk -F "_" '{print $1}')
 
 echo $j
 
-./ogma.py -image $i -vis single -refresh true -container $j -nofix show -input /media/kafaka/Data/VQ/Security_Compliance/Docker_Scans/3_9_2
+./ogma.py -image $i -vis single -refresh true -container $j -nofix show
 
 done
