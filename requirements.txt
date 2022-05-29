@@ -1,0 +1,7 @@
+docker
+pandas
+networkx
+plotly
+cve_searchsploit
+tqdm
+cvedb
