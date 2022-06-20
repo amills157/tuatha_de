@@ -4,9 +4,7 @@ import visualisation.sub_plots as vis_multi
 
 def node_data(container_image,scan_folder):
 
-    container_image_filename = container_image.replace(":","_").replace(".","_")
-
-    print(container_image_filename)
+    container_image_filename = container_image.replace(":","_").replace(".","_").replace("/","_")
 
     count = 1
 
@@ -107,7 +105,7 @@ def borvo_vis_wrapper(container_image,dir_path):
         temp_dict["Container"] = container_image
         output_dicts.append(temp_dict)
 
-    with open("{}/{}.csv".format(csv_file_path,container_image.replace(":","_").replace(".","_")), 'w') as f:
+    with open("{}/{}.csv".format(csv_file_path,container_image.replace(":","_").replace(".","_").replace("/","_")), 'w') as f:
         w = csv.DictWriter(f, temp_dict.keys())
         w.writeheader()
         w.writerows(output_dicts)
@@ -117,4 +115,4 @@ def borvo_vis_wrapper(container_image,dir_path):
         vuln_count[key] = 0
         vuln_count[key] = new_value
 
-    vis_multi.node_link_plot(container_image, figures, vuln_count, scanners, per_scanner_vuln_count,0,[],vis_output_path,True)
+    vis_multi.node_link_plot(container_image.replace(":","_").replace(".","_").replace("/","_"), figures, vuln_count, scanners, per_scanner_vuln_count,0,[],vis_output_path,True)

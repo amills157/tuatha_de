@@ -109,7 +109,7 @@ def borvo_wrapper(container_image,dir_path):
         if not os.path.isdir("{}/output_files/updated_images".format(dir_path)):
             os.makedirs("{}/output_files/updated_images".format(dir_path))
 
-        img_f = open('{}/output_files/updated_images/{}.tar'.format(dir_path,new_image_tag.replace(":","_").replace(".","_")), 'wb')
+        img_f = open('{}/output_files/updated_images/{}.tar'.format(dir_path,new_image_tag.replace(":","_").replace(".","_").replace("/","_")), 'wb')
         for chunk in image.save(named=True):
             img_f.write(chunk)
         img_f.close()

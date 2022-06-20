@@ -1,0 +1,9 @@
+*.json
+*.txt
+*.csv
+*.tar.gz
+*.tar
+*.sh
+*.html
+__pycache__/
+!requirements.txt

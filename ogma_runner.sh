@@ -1,13 +1,13 @@
 #!/bin/bash
 
-for i in $(cat image_list.txt); do
+for i in $(cat docker_images.txt); do
 
 echo $i
 
-j=$(echo $i | awk -F "_" '{print $1}')
+j=$(echo $i | awk -F ":" '{print $2}')
 
 echo $j
 
-./ogma.py -image $i -vis single -refresh true -container $j -nofix show
+./ogma.py -image $i -vis single -container $j -update yes
 
 done

@@ -9,7 +9,7 @@ def create_node_egde_files(input_path,container_name,container_image,scanner,out
     if borvo_flag:
 
         if ":" in container_image:
-            container_image = container_image.replace(":","_").replace(".","_")
+            container_image = container_image.replace(":","_").replace(".","_").replace("/","_")
 
         update_marker = ""
 
