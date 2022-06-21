@@ -240,79 +240,50 @@ def grype_formater(input_file,output_path, container_name):
 
 def trivy_formater(input_file,output_path,container_name):
 
-    f = open(input_file,"r")
-    lines = f.readlines()
-    f.close()
+    print(input_file)
 
-    file=open("temp",'w')
-    for line in lines:
-        if "-+-" in line or "|" not in line:
-            continue
-        else:
-            file.writelines([line])
+    f = open(input_file)
 
-    file.close()
+    data = json.load(f)
 
-    try:
-        df = pd.read_csv("temp", sep="|", engine='python')
-    except pd.errors.EmptyDataError as e:
+    print(data)
+
+    package_list = []
+
+    cve_list = []
+
+    edges_list = []
+
+    for i in data["Results"]:
+        if "Vulnerabilities" in i.keys():
+            for cve in i["Vulnerabilities"]:
+
+                installed_pkg = cve["PkgName"] + "_" + cve["InstalledVersion"]
+
+                package_list.append(installed_pkg)
+                
+                cve_list.append(cve["VulnerabilityID"])
+
+                edges_list.append(installed_pkg + ' ' + cve["VulnerabilityID"])
+
+    unique_pkgs = list(set(package_list))
+
+    unique_cves = list(set(cve_list))
+
+    node_list = unique_pkgs + unique_cves
+
+    if len(node_list) == 0:
         return
-
-    os.remove("temp")
-
-    current_pkg = ""
-
-    current_sev = ""
-
-    df = df.rename(columns=lambda x: x.strip())
-
-    df = df[df["VULNERABILITY ID"].notna()]
-
-    df = df.drop(["Unnamed: 0"], axis=1)
-
-    for idx, row in df.iterrows():
-
-        if row["VULNERABILITY ID"].strip() == "":
-            df.drop(idx, inplace=True)
-        # Instances where there are multiple reports and we end up with row headers in df
-        elif row["VULNERABILITY ID"].strip() == "VULNERABILITY ID":
-            df.drop(idx, inplace=True)
-        else:
-            cve = row["VULNERABILITY ID"].strip()
-            if row["SEVERITY"].strip() != "":
-                current_sev = row["SEVERITY"].strip()
-            sev_cc = current_sev[0] + current_sev[1:].lower()
-            df.loc[idx,"VULNERABILITY ID"]= cve + "_" + sev_cc
-
-    for idx, row in df.iterrows():
-        if row["LIBRARY"].strip() != "":
-            current_pkg = row["LIBRARY"].strip() 
-        if row["INSTALLED VERSION"].strip() != "":
-            current_version = row["INSTALLED VERSION"].strip()
-        df.loc[idx,"LIBRARY"]=current_pkg + "_" + current_version
-
-    package_list = df["LIBRARY"].unique().tolist()
-
-    cve_list = df["VULNERABILITY ID"].unique().tolist()
-
-    node_list = package_list + cve_list
 
     node_list.append(container_name.upper())
 
     write_node_list(node_list,output_path)
-
-    edges_list = []
-
-    for idx, row in df.iterrows():
-        temp = row["LIBRARY"] + ' ' + row["VULNERABILITY ID"]
-        edges_list.append(temp)
     
-    for pkg in package_list:
+    for pkg in unique_pkgs:
         temp = container_name.upper() + ' ' + pkg
         edges_list.append(temp)
 
     write_edge_list(edges_list,output_path)
-
     
 def sysdig_formater(input_file,output_path,container_name):
 
