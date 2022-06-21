@@ -240,13 +240,9 @@ def grype_formater(input_file,output_path, container_name):
 
 def trivy_formater(input_file,output_path,container_name):
 
-    print(input_file)
-
     f = open(input_file)
 
     data = json.load(f)
-
-    print(data)
 
     package_list = []
 
@@ -284,6 +280,7 @@ def trivy_formater(input_file,output_path,container_name):
         edges_list.append(temp)
 
     write_edge_list(edges_list,output_path)
+    
     
 def sysdig_formater(input_file,output_path,container_name):
 
