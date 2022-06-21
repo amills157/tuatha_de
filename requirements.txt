@@ -5,3 +5,4 @@ plotly
 cve_searchsploit
 tqdm
 cvedb
+scipy
