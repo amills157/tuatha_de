@@ -174,6 +174,15 @@ def grype_formater(input_file,output_path, container_name):
     if "No vulnerabilities found" in df.columns:
         return
 
+    # New column  that we don't need / messes with the previously established setup
+    #df = df.drop(['TYPE'], axis = 1)
+
+    with pd.option_context('display.max_rows', None,
+                       'display.max_columns', None,
+                       'display.precision', 3,
+                       ):
+        print(df)
+
     # FIXED-IN     VULNERABILITY     SEVERITY
 
     if None in df['SEVERITY'].values:
@@ -181,22 +190,25 @@ def grype_formater(input_file,output_path, container_name):
         for idx, row in df.iterrows():
             if row['SEVERITY'] is None:
                 df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'FIXED-IN']
+                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+                df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
                 df.loc[idx, 'FIXED-IN'] = None
-                
-
+            
     if df['SEVERITY'].isna().all():
         for idx, row in df.iterrows():
             df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-            df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'FIXED-IN']
+            df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+            df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
             df.loc[idx, 'FIXED-IN'] = None
+
 
     # If after the above fix we still have issues it's related to the installed value
     if None in df['SEVERITY'].values:
         for idx, row in df.iterrows():
             if row['SEVERITY'] is None:
                 df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'INSTALLED']
+                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+                df.loc[idx, 'TYPE'] = df.loc[idx, 'INSTALLED']
                 df.loc[idx, 'INSTALLED'] = ''
                 df.loc[idx, 'FIXED-IN'] = None
 

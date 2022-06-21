@@ -101,14 +101,15 @@ def grype_formater(input_file):
         for idx, row in df.iterrows():
             if row['SEVERITY'] is None:
                 df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'FIXED-IN']
+                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+                df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
                 df.loc[idx, 'FIXED-IN'] = None
-                
-
+            
     if df['SEVERITY'].isna().all():
         for idx, row in df.iterrows():
             df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-            df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'FIXED-IN']
+            df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+            df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
             df.loc[idx, 'FIXED-IN'] = None
 
     # If after the above fix we still have issues it's related to the installed value
@@ -116,7 +117,8 @@ def grype_formater(input_file):
         for idx, row in df.iterrows():
             if row['SEVERITY'] is None:
                 df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
-                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'INSTALLED']
+                df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
+                df.loc[idx, 'TYPE'] = df.loc[idx, 'INSTALLED']
                 df.loc[idx, 'INSTALLED'] = ''
                 df.loc[idx, 'FIXED-IN'] = None
 
