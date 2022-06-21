@@ -252,15 +252,17 @@ def trivy_formater(input_file,output_path,container_name):
 
     for i in data["Results"]:
         if "Vulnerabilities" in i.keys():
-            for cve in i["Vulnerabilities"]:
+            for vuln in i["Vulnerabilities"]:
 
-                installed_pkg = cve["PkgName"] + "_" + cve["InstalledVersion"]
+                installed_pkg = vuln["PkgName"] + "_" + vuln["InstalledVersion"]
 
                 package_list.append(installed_pkg)
-                
-                cve_list.append(cve["VulnerabilityID"])
 
-                edges_list.append(installed_pkg + ' ' + cve["VulnerabilityID"])
+                cve = vuln["VulnerabilityID"] + "_" + vuln["Severity"].capitalize()
+                
+                cve_list.append(cve)
+
+                edges_list.append(installed_pkg + ' ' + cve)
 
     unique_pkgs = list(set(package_list))
 
@@ -280,7 +282,7 @@ def trivy_formater(input_file,output_path,container_name):
         edges_list.append(temp)
 
     write_edge_list(edges_list,output_path)
-    
+
     
 def sysdig_formater(input_file,output_path,container_name):
 
