@@ -120,10 +120,12 @@ for i in $(cat docker_images.txt); do
   k="${j//:/_}"
   l="${k////_}"
 
-  clair-scanner --ip 127.0.0.1 -r clair/scans/$l.json $i
+  clair-scanner --ip <YOUR IP> -r clair/scans/$l.json $i
 
 done
 ```
+
+Please note that for the clair scanner using 127.0.0.1 will likely result in issues / errors
 
 ### Grype
 
@@ -152,7 +154,7 @@ A Simple and Comprehensive Vulnerability Scanner for Containers and other Artifa
 
 https://aquasecurity.github.io/trivy/
 
-Trivy output should be in text (.txt) format
+Trivy output should be in text (.json) format
 
 #### Example
 
@@ -165,7 +167,7 @@ j="${i//./_}"
 k="${j//:/_}"
 l="${k////_}"
 
-trivy image $i > trivy/scans/$l.txt
+trivy image -f json -o trivy/$l.json $i
 
 done
 ```
