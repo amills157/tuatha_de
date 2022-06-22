@@ -1,14 +1,33 @@
 import os
+import pathlib
 import re
 import json
 import docker
 import requests
 import pandas as pd
+import socket
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 pd.options.mode.chained_assignment = None
+
+def get_ip_address():
+    '''
+    Force a connection to 8.8.8.8 to determine the IP address of the 
+    interface used by the default route.
+
+        Parameters:
+            None
+
+        Returns:
+            ip_address (str): String containing IP address.
+    '''
+    
+    s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+
+    return s.getsockname()[0]
 
 
 def image_pull_scan(container_image, dir_path, docker_client):
@@ -32,7 +51,7 @@ def image_pull_scan(container_image, dir_path, docker_client):
         if not os.path.isdir("{}/{}".format(scan_folder,fldr)):
             os.makedirs("{}/{}".format(scan_folder,fldr))
 
-    os.system("clair-scanner --ip 192.168.172.10 -r {}/clair/{}.json {}".format(scan_folder,container_image_filenames, container_image))
+    os.system("clair-scanner --ip {} -r {}/clair/{}.json {}".format(get_ip_address(), scan_folder, container_image_filenames, container_image))
 
     os.system("grype {} > {}/grype/{}.txt".format(container_image,scan_folder,container_image_filenames))
 
@@ -51,7 +70,15 @@ def image_pull_scan(container_image, dir_path, docker_client):
 
 def clair_formater(input_file):
 
-    if os.stat(input_file).st_size == 0:
+    try:
+        if os.stat(input_file).st_size == 0:
+            return
+    except Exception as e: 
+        print(e)
+        f = open(f'{pathlib.Path(input_file).parent}/clair_error_log.txt', 'a')
+        f.write(str(e)+"\n")
+        f.close()
+
         return
 
     f = open(input_file)
