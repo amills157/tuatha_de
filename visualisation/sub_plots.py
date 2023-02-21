@@ -35,10 +35,11 @@ def create_vuln_trace(trace_type,vuln_node):
 
     vuln_trace = go.Scatter(
         x=vuln_node["{}_x".format(trace_type)], y=vuln_node["{}_y".format(trace_type)],
-        mode='markers',
+        mode='markers+text',
         hoverinfo='text',
         name='{} CVEs'.format(trace_name),
         text = vuln_node["{}_text".format(trace_type)],
+        hovertext = vuln_node["{}_hover_text".format(trace_type)],
         marker=dict(
             color=vuln_node["{}_colour".format(trace_type)],
             size=vuln_node["{}_size".format(trace_type)],
@@ -49,45 +50,41 @@ def create_vuln_trace(trace_type,vuln_node):
 
     return vuln_trace
 
-def node_data(container_image,node_edge_file_path):
+def node_data(container_image,node_edge_file_path,borvo_flag):
 
     count = 1
 
     last_line = ""
-    malware_count = -1
-
     node_input = []
     edge_input = []
     scanners = []
-    malware_bins = []
 
     for root, dirs, files in os.walk(node_edge_file_path):
         for file in files:
             if container_image in file:
                 full_path = os.path.join(root,file)
+                if "updated" in file and not borvo_flag:
+                    continue
+
+                if file.replace("_nodes.txt","").replace("_edges.txt","") != container_image:
+                    continue
+
                 if "nodes" in file:
+                    if "clair" in full_path and "clair" not in scanners:
+                        scanners.append("clair")
+                    if "jfrog" in full_path and "jfrog" not in scanners:
+                        scanners.append("jfrog")
+                    if "docker_scan" in full_path and "docker_scan" not in scanners:
+                        scanners.append("docker_scan")
+                    if "grype" in full_path and "grype" not in scanners:
+                        scanners.append("grype")
+                    if "trivy" in full_path and "trivy" not in scanners:
+                        scanners.append("trivy")
+                    if "sysdig" in full_path and "sysdig" not in scanners:
+                        scanners.append("sysdig")
+
                     with open(full_path) as f:
-                        if "clair" in full_path and "clair" not in scanners:
-                            scanners.append("clair")
-                        if "dagda" in full_path and "dagda" not in scanners:
-                            scanners.append("dagda")
-                        if "docker_scan" in full_path and "docker_scan" not in scanners:
-                            scanners.append("docker_scan")
-                        if "grype" in full_path and "grype" not in scanners:
-                            scanners.append("grype")
-                        if "trivy" in full_path and "trivy" not in scanners:
-                            scanners.append("trivy")
-                        if "sysdig" in full_path and "sysdig" not in scanners:
-                            scanners.append("sysdig")
                         temp = f.read().splitlines()
-
-                        if "dagda" in full_path:
-                            malware_count = int(temp.pop(-2))
-
-                            if malware_count >0:
-                                for i in range(0, malware_count):
-                                    malware_bin = temp.pop(-2)
-                                    malware_bins.append(malware_bin)
 
                         node_input.append(temp)
 
@@ -97,14 +94,14 @@ def node_data(container_image,node_edge_file_path):
                     count += 1
 
                 if "edges" in file:
-                    with open(os.path.join(root,file)) as f:
+                    with open(full_path) as f:
                         temp = f.read().splitlines()
 
                         edge_input.append(temp)
 
-    return node_input, edge_input, scanners, count, last_line, malware_count, malware_bins
+    return node_input, edge_input, scanners, count, last_line
 
-def node_link_create_traces(node_input, edge_input, count, scanner, container,malware_count, final_loop, borvo_flag):
+def node_link_create_traces(node_input, edge_input, count, scanner, container, final_loop, borvo_flag):
     global legend_items
 
     my_graph = nx.Graph()
@@ -150,6 +147,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
         vuln_node["{}_x".format(item)] = []
         vuln_node["{}_y".format(item)] = []
         vuln_node["{}_text".format(item)] = []
+        vuln_node["{}_hover_text".format(item)] = []
         vuln_node["{}_colour".format(item)] = []
         vuln_node["{}_marker".format(item)] = []
         vuln_node["{}_size".format(item)] = []
@@ -318,7 +316,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
                         av = r.json()["access"]["vector"] 
                 # Entries without a vector
                 except KeyError as e:
-                    continue
+                    pass
 
             if av == "LOCAL":
                 string_format = "local"
@@ -333,9 +331,12 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
                 marker = "hash" + marker
                 legend_items["Reserved CVE"] = ["hash","unknown"]
 
+            node_text =""" <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={}">  </a>""".format(str(node),)
+
             vuln_node["{}_x".format(string_format)].append(x)
             vuln_node["{}_y".format(string_format)].append(y)
-            vuln_node["{}_text".format(string_format)].append(str(node) + exploits)
+            vuln_node["{}_text".format(string_format)].append(node_text)
+            vuln_node["{}_hover_text".format(string_format)].append(str(node) + exploits)
             vuln_node["{}_colour".format(string_format)].append(vuln_colour)
             vuln_node["{}_marker".format(string_format)].append(marker)
             vuln_node["{}_size".format(string_format)].append(node_size)
@@ -346,7 +347,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
 
             vuln_node["other_x"].append(x)
             vuln_node["other_y"].append(y)
-            vuln_node["other_text"].append(str(node))
+            vuln_node["other_hover_text"].append(str(node))
             vuln_node["other_colour"].append(vuln_colour)
             if "EBID" in str(node):
                 marker = ""
@@ -360,10 +361,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
                 package_node_opacity.append(1)
                 central_pos.append(x)
                 central_pos.append(y)
-                if malware_count > 0:
-                    package_node_colour.append("red")
-                else:
-                    package_node_colour.append("white")
+                package_node_colour.append("white")
             else: 
                 package_node_size.append(node_size)
                 package_node_opacity.append(0.7)
@@ -431,19 +429,16 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container,ma
     return fig, vuln_count
 
 
-def node_link_plot(container_image, figures,vuln_count,scanners,per_scanner_vuln_count,malware_count,malware_bins,vis_output_path,borvo_flag):
+def node_link_plot(container_image, figures,vuln_count,scanners,per_scanner_vuln_count,vis_output_path,borvo_flag):
 
     final_figure = make_subplots(
         rows=2, cols=3)
 
-    row_col = [[1,1], [1,2], [1,3], [2,1], [2,2], [2,3]]
+    row_col = [[1,1], [1,2], [1,3], [2,3], [2,2], [2,1]]
 
     if ":" in container_image:
         container_image = container_image.replace(":","_").replace(".","_")
 
-
-    if malware_count > 0:
-        text = text + "<br>MALWARE DETECTED!<br>" + ",".join(malware_bins)
 
     for i in range(0, len(figures)):
         for t in figures[i].data:
@@ -495,7 +490,7 @@ def node_link_plot(container_image, figures,vuln_count,scanners,per_scanner_vuln
             bgcolor="LightBlue",
             bordercolor="Black",
             borderwidth=1,
-            itemwidth=10000
+            # itemwidth=10000
         ),
         title=dict(
                 text=title_text,

@@ -3,7 +3,7 @@ import csv
 import visualisation.single_plot as vis_single
 import visualisation.sub_plots as vis_multi
 
-def plot_create(vis_type,container_image, scanner, dir_path,nofix_show):
+def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_flag):
 
     node_edge_file_path = os.path.join(dir_path,"visualisation/node_edge_files")
 
@@ -13,15 +13,15 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show):
 
     if "single" in vis_type:
 
-        node_input, edge_input, count, container, malware_count, malware_bins = vis_single.node_data(container_image, scanner, node_edge_file_path,nofix_show)
+        node_input, edge_input, count, container = vis_single.node_data(container_image, scanner, node_edge_file_path,nofix_show,borvo_flag)
 
-        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container, malware_count)
+        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container)
 
-        vis_single.node_link_plot(fig, container_image, scanner, vuln_count, malware_count, malware_bins,vis_output_path)
+        vis_single.node_link_plot(fig, container_image, scanner, vuln_count,vis_output_path)
 
     if "multi" in vis_type:
 
-        node_input, edge_input, scanners, count, container, malware_count, malware_bins = vis_multi.node_data(container_image,node_edge_file_path)
+        node_input, edge_input, scanners, count, container, = vis_multi.node_data(container_image,node_edge_file_path,borvo_flag)
 
         figures = []
 
@@ -46,14 +46,13 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show):
 
         per_scanner_vuln_count = []
 
+        temp_dict = dict()
+
         for i in range(0,len(node_input)):
-            local_malware_count = 0
             final_loop = False
-            if scanners[i] == "dagda":
-                local_malware_count = malware_count
             if i == (len(node_input) -1):
                 final_loop= True
-            fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container, local_malware_count,final_loop,False)
+            fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container,final_loop,False)
             figures.append(fig)
             vuln_sum = 0
             for key in cve_keys:
@@ -74,4 +73,4 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show):
             w.writeheader()
             w.writerows(output_dicts)
 
-        vis_multi.node_link_plot(container_image, figures, vuln_count, scanners, per_scanner_vuln_count, malware_count,malware_bins,vis_output_path,False)
+        vis_multi.node_link_plot(container_image, figures, vuln_count, scanners, per_scanner_vuln_count,vis_output_path,False)

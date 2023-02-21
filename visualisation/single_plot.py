@@ -33,10 +33,11 @@ def create_vuln_trace(trace_type,vuln_node):
 
     vuln_trace = go.Scatter(
         x=vuln_node["{}_x".format(trace_type)], y=vuln_node["{}_y".format(trace_type)],
-        mode='markers',
+        mode='markers+text',
         hoverinfo='text',
         name='{} CVEs'.format(trace_name),
         text = vuln_node["{}_text".format(trace_type)],
+        hovertext = vuln_node["{}_hover_text".format(trace_type)],
         marker=dict(
             color=vuln_node["{}_colour".format(trace_type)],
             size=vuln_node["{}_size".format(trace_type)],
@@ -47,16 +48,15 @@ def create_vuln_trace(trace_type,vuln_node):
 
     return vuln_trace
 
-def node_data(container_image, scanner,node_edge_file_path,nofix_show):
+def node_data(container_image, scanner,node_edge_file_path,nofix_show,borvo_flag):
 
     count = 1
 
     last_line = ""
-    malware_count = -1
 
     node_input = []
     edge_input = []
-    malware_bins = []
+
 
     print(scanner)
 
@@ -66,14 +66,6 @@ def node_data(container_image, scanner,node_edge_file_path,nofix_show):
 
             last_line = node_input[-1]
 
-            if scanner.lower() == "dagda":
-                malware_count = int(node_input.pop(-2))
-
-                if malware_count >0:
-                    for i in range(0, malware_count):
-                        malware_bin = node_input.pop(-2)
-                        malware_bins.append(malware_bin)
-
         with open("{}/{}/{}_edges.txt".format(node_edge_file_path,scanner,container_image)) as f:
             edge_input = f.read().splitlines()
     
@@ -81,18 +73,16 @@ def node_data(container_image, scanner,node_edge_file_path,nofix_show):
         for root, dirs, files in os.walk(node_edge_file_path):
             for file in files:
                 if container_image in file:
-                    full_path = os.path.join(root,file)                    
+                    full_path = os.path.join(root,file)
+                    if "updated" in file and not borvo_flag:
+                        continue              
+
+                    if file.replace("_nodes.txt","").replace("_edges.txt","") != container_image:
+                        continue
+
                     if "nodes" in file:
                         with open(full_path) as f:
                             temp = f.read().splitlines()
-
-                            if "dagda" in full_path:
-                                malware_count = int(temp.pop(-2))
-
-                                if malware_count >0:
-                                    for i in range(0, malware_count):
-                                        malware_bin = temp.pop(-2)
-                                        malware_bins.append(malware_bin)
 
                             node_input += temp
 
@@ -109,7 +99,8 @@ def node_data(container_image, scanner,node_edge_file_path,nofix_show):
 
     parsed_node_input, parsed_edge_input = node_data_parse(node_input, edge_input,nofix_show)
 
-    return parsed_node_input, parsed_edge_input, count, last_line, malware_count, malware_bins
+    return parsed_node_input, parsed_edge_input, count, last_line,
+    
 
 
 def node_data_parse(node_input,edge_input,nofix_show):
@@ -127,6 +118,7 @@ def node_data_parse(node_input,edge_input,nofix_show):
             r = re.compile(r"(CVE).\w.*")
 
             fix = ""
+            cve_sev = "Unknown"
 
             if any(cve in sub for sub in nofixes):
                 fix="_NOFIX"
@@ -173,7 +165,7 @@ def node_data_parse(node_input,edge_input,nofix_show):
 
     return node_input, parsed_edge_input
 
-def node_link_create_traces(node_input, edge_input, count, scanner, container, malware_count):
+def node_link_create_traces(node_input, edge_input, count, scanner, container):
 
     my_graph = nx.Graph()
 
@@ -235,6 +227,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
         vuln_node["{}_x".format(item)] = []
         vuln_node["{}_y".format(item)] = []
         vuln_node["{}_text".format(item)] = []
+        vuln_node["{}_hover_text".format(item)] = []
         vuln_node["{}_colour".format(item)] = []
         vuln_node["{}_marker".format(item)] = []
         vuln_node["{}_size".format(item)] = []
@@ -310,7 +303,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
             cursor = conn.execute("SELECT impact_vector from cves where id = '"+cve_assignment+"'")
 
             av = "Unknown"
-
+            
             for row in cursor:
                 if row[0]:
                     temp = re.findall(av_regex,row[0])[0]
@@ -329,7 +322,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
                         av = r.json()["access"]["vector"] 
                 # Entries without a vector
                 except KeyError as e:
-                    continue
+                    pass
 
             if av == "LOCAL":
                 string_format = "local"
@@ -344,9 +337,12 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
                 marker = "hash" + marker
                 legend_items["Reserved CVE"] = ["hash","unknown"]
 
+            node_text =""" <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={}">  </a>""".format(str(node),)
+
             vuln_node["{}_x".format(string_format)].append(x)
             vuln_node["{}_y".format(string_format)].append(y)
-            vuln_node["{}_text".format(string_format)].append(str(node) + exploits)
+            vuln_node["{}_text".format(string_format)].append(node_text)
+            vuln_node["{}_hover_text".format(string_format)].append(str(node) + exploits)
             vuln_node["{}_colour".format(string_format)].append(vuln_colour)
             vuln_node["{}_marker".format(string_format)].append(marker)
             vuln_node["{}_size".format(string_format)].append(node_size)
@@ -356,7 +352,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
 
             vuln_node["other_x"].append(x)
             vuln_node["other_y"].append(y)
-            vuln_node["other_text"].append(str(node))
+            vuln_node["other_hover_text"].append(str(node))
             vuln_node["other_colour"].append(vuln_colour)
             if "EBID" in str(node):
                 marker = ""
@@ -370,10 +366,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
                 package_node_opacity.append(1)
                 central_pos.append(x)
                 central_pos.append(y)
-                if malware_count > 0:
-                    package_node_colour.append("red")
-                else:
-                    package_node_colour.append("white")
+                package_node_colour.append("white")
             else: 
                 package_node_size.append(node_size)
                 package_node_opacity.append(0.7)
@@ -436,14 +429,11 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, m
     return fig, vuln_count
 
 
-def node_link_plot(fig, container_image, scanner, vuln_count, malware_count, malware_bins,vis_output_path):
+def node_link_plot(fig, container_image, scanner, vuln_count,vis_output_path):
 
     fig.layout.template = "custom_dark"
 
     text = "{} CVEs {} <br>Total {}".format(container_image, scanner, sum(vuln_count.values()))
-
-    if malware_count > 0:
-        text = text + "<br>MALWARE DETECTED!<br>" + ",".join(malware_bins)
         
     fig.update_layout(
         legend=dict(
@@ -458,7 +448,7 @@ def node_link_plot(fig, container_image, scanner, vuln_count, malware_count, mal
             bgcolor="LightBlue",
             bordercolor="Black",
             borderwidth=1,
-            itemwidth=10000
+            # itemwidth=30
         ),
         title=dict(
             text=text,
@@ -468,7 +458,7 @@ def node_link_plot(fig, container_image, scanner, vuln_count, malware_count, mal
             yanchor="top"
         ),
         titlefont_size=16,
-        showlegend=False,
+        showlegend=True,
         hovermode="closest",
         margin=dict(b=20,l=5,r=5,t=40),
         annotations=[ dict(
@@ -485,7 +475,7 @@ def node_link_plot(fig, container_image, scanner, vuln_count, malware_count, mal
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
     )
 
-    fig.update_layout(showlegend=True)
+    #fig.update_layout(showlegend=True)
     fig.update_coloraxes(showscale=False)
     fig.update(layout_coloraxis_showscale=False)
 

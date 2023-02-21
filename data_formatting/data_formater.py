@@ -9,6 +9,20 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 pd.options.mode.chained_assignment = None
 
+def sysdig_file_checking(file_path_list,container_image):
+
+    new_file_path_list = []
+
+    for f in file_path_list:
+
+        stripped_file_name = os.path.basename(f).split(".")[0].replace("docker_io_","").replace("_os_vulnerabilities","").replace("_non-os_vulnerabilities","")
+
+        if stripped_file_name == container_image:
+            new_file_path_list.append(f)
+
+    return new_file_path_list
+
+
 
 # Need to change this to use the database as per ploting scripts
 def get_cve_severity(cve):
@@ -97,77 +111,64 @@ def clair_formater(input_file,output_path,container_name):
     write_edge_list(edges_list,output_path)
 
 
-def dagda_formater(input_file,output_path,container_name):
+def jfrog_formater(input_file,output_path,container_name):
 
     f = open(input_file)
 
     data = json.load(f)
 
-    malware_list = data[0]["static_analysis"]["malware_binaries"]
-
-    malware_count = len(malware_list)
-
-    package_list = []
-    cve_list = []
+    vulnerabilities = []
 
     edges_list = []
 
-    for i in data[0]["static_analysis"]["os_packages"]["os_packages_details"]:
-        if len(i["vulnerabilities"]) > 0:
-            pkg = i["product"] + "_" + i["version"]
-            package_list.append(pkg)
-            for j in i["vulnerabilities"]:
-                for key, val in j.items():
-                    if "CVE" in key:
-                        cve = str(key)
-                    else:
-                        if "cve" in val:
-                            if len(val["cve"])>0:
-                                cve=val["cve"][0]
-                            else:
-                                cve="BugTraqID:" + str(val["bugtraq_id"])
-                        elif "exploit_db_id" in val:
-                            edbid=val["exploit_db_id"]
-                            try:
-                                cve = CS.cve_from_edbid(edbid)[0]
-                            except IndexError as e:
-                                cve = "N/A"
-                    
-                    if cve != "N/A":
-                        sev = get_cve_severity(cve)
-                        sev_cc = sev.capitalize()
-                        cve = cve+"_"+sev_cc
-                    else:
-                        cve = "EBID:" + str(edbid)+"_Unknown"
-                            
-                    cve_list.append(cve)
-                    edges_list.append(pkg + ' ' + cve)
+    cve_list = []
+    package_list = []
 
-    
+    for i in range(0, len(data)):
+        try:
+            vulnerabilities.append(data[i]["vulnerabilities"])
+        except KeyError as e:
+            pass 
+
+    for outer in vulnerabilities:
+        for vuln in outer:
+            for k,v in vuln.items():
+                try:
+                    cve = vuln["cves"][0]["cve"]
+                    severity = vuln["severity"]
+                    cve_sev = cve + "_" + severity
+                    cve_list.append(cve_sev)
+                    pkg = (next(iter(vuln["components"])).split(":")[-2])
+                    version = (next(iter(vuln["components"])).split(":")[-1])
+                    pkg_ver = pkg + "_" + version
+                    package_list.append(pkg_ver)
+                    edges_list.append(pkg_ver + ' ' + cve_sev)
+                except KeyError as e:
+                    pass
+                
     unique_pkgs = list(set(package_list))
 
     unique_cves = list(set(cve_list))
 
     node_list = unique_pkgs + unique_cves
-    
-    if malware_count >0:
-        for malware_bin in malware_list:
-            node_list.append(malware_bin)
-    
-    node_list.append(str(malware_count))
+
+    if len(node_list) == 0:
+        return
 
     node_list.append(container_name.upper())
 
     write_node_list(node_list,output_path)
-
+    
     for pkg in unique_pkgs:
         temp = container_name.upper() + ' ' + pkg
         edges_list.append(temp)
 
-    write_edge_list(list(set(edges_list)),output_path)
-
+    write_edge_list(edges_list,output_path)
 
 def grype_formater(input_file,output_path, container_name):
+
+    if os.stat(input_file).st_size == 0:
+        return
 
     df = pd.read_csv(input_file, sep=r'\s{2,}', engine='python')
 
@@ -176,12 +177,6 @@ def grype_formater(input_file,output_path, container_name):
 
     # New column  that we don't need / messes with the previously established setup
     #df = df.drop(['TYPE'], axis = 1)
-
-    with pd.option_context('display.max_rows', None,
-                       'display.max_columns', None,
-                       'display.precision', 3,
-                       ):
-        print(df)
 
     # FIXED-IN     VULNERABILITY     SEVERITY
 
@@ -252,6 +247,9 @@ def grype_formater(input_file,output_path, container_name):
 
 def trivy_formater(input_file,output_path,container_name):
 
+    if os.stat(input_file).st_size == 0:
+        return
+    
     f = open(input_file)
 
     data = json.load(f)
@@ -261,6 +259,9 @@ def trivy_formater(input_file,output_path,container_name):
     cve_list = []
 
     edges_list = []
+    
+    if "Results" not in data:
+        return
 
     for i in data["Results"]:
         if "Vulnerabilities" in i.keys():
@@ -296,23 +297,34 @@ def trivy_formater(input_file,output_path,container_name):
     write_edge_list(edges_list,output_path)
 
     
-def sysdig_formater(input_file,output_path,container_name):
+def sysdig_formater(input_file,output_path,container_name,container_image):
+
+    potential_files = []
 
     col_names =  ["package","severity","vuln"]
 
     df = pd.DataFrame(columns = col_names)
 
     for root, dirs, files in os.walk(input_file):
-            for file in files:
-                if container_name.lower() in file:
+        for file in files:
+            if container_image.lower() in file:
 
-                    file_path = os.path.join(root,file)
+                file_path = os.path.join(root,file)
 
-                    temp = pd.read_csv(file_path, index_col=0)
+                potential_files.append(file_path)
 
-                    rel_df = temp[["package","severity","vuln"]]
+    checked_file_list = sysdig_file_checking(potential_files,container_image)
 
-                    df = df.append(rel_df, ignore_index=True)
+    for file_path in checked_file_list:
+    
+        if os.stat(file_path).st_size == 0:
+            continue
+		
+        temp = pd.read_csv(file_path, index_col=0)
+
+        rel_df = temp[["package","severity","vuln"]]
+
+        df = df.append(rel_df, ignore_index=True)
 
     df["cve"] = df["vuln"] + "_" + df["severity"]
 
