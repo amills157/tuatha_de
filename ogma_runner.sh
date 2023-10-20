@@ -8,6 +8,6 @@ j=$(echo $i | awk -F ":" '{print $2}')
 
 echo $j
 
-./ogma.py -image $i -container $j -vis Both
+./ogma.py -image $i -container $j -vis Both -refresh True
 
 done

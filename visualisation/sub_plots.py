@@ -118,7 +118,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, f
     # spring_layout / fruchterman_reingold_layout
     pos = nx.layout.kamada_kawai_layout(my_graph)
 
-    vuln_types = ["ALAS", "ALAS2", "BugTraq", "CVE", "CWE", "DLA","EBID", "ELSA", "GHSA", "GMS", "RHSA", "VULNDB"]
+    vuln_types = ["ALAS", "ALAS2", "BugTraq", "CVE", "CWE", "DLA","EBID", "ELSA", "GHSA", "GMS", "RHSA", "VULNDB", "SUSE-SU", "GO"]
 
     vuln_trace_types = ["local","network","unknown","other"]
 

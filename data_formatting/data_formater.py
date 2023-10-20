@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import requests
 import pandas as pd
@@ -86,13 +87,40 @@ def clair_formater(input_file,output_path,container_name):
     cve_list = []
 
     edges_list =[]
+
+    if "unapproved" in data:
+
+        for i in data["vulnerabilities"]:
+            pkg = i["featurename"]+'_'+i["featureversion"]
+            cve = i["vulnerability"] + '_' + i["severity"]
+            package_list.append(pkg)
+            cve_list.append(cve)
+            edges_list.append(pkg + ' ' + cve)
+
+    else:
+        
+        for _, vuln_id in data["vulnerabilities"].items():
+            
+            if vuln_id["package"]["version"] != "":
+                pkg = vuln_id["package"]["name"]+'_'+vuln_id["package"]["version"]
+            else:
+                pkg = vuln_id["package"]["name"]
+
+            match = re.search(r"\bCVE-\d{4}-\d{4,7}\b", vuln_id["links"])
+
+            if match:
+                    cve = match.group()
+            else:
+                cve = vuln_id["name"]
+
+            sev = vuln_id["normalized_severity"]
+
+            vuln = cve+"_"+sev
+
+            package_list.append(pkg)
+            cve_list.append(vuln)
+            edges_list.append(pkg + ' ' + vuln)
     
-    for i in data["vulnerabilities"]:
-        pkg = i["featurename"]+'_'+i["featureversion"]
-        cve = i["vulnerability"] + '_' + i["severity"]
-        package_list.append(pkg)
-        cve_list.append(cve)
-        edges_list.append(pkg + ' ' + cve)
 
     unique_pkgs = list(set(package_list))
 
@@ -267,15 +295,28 @@ def trivy_formater(input_file,output_path,container_name):
         if "Vulnerabilities" in i.keys():
             for vuln in i["Vulnerabilities"]:
 
+                match = re.search(r"\bCVE-\d{4}-\d{4,7}\b", vuln["VulnerabilityID"] )
+
+                cve = vuln["VulnerabilityID"]
+
+                if not match: 
+                    for _, v in vuln.items():
+                        try:
+                            cve_search = re.search(r"\bCVE-\d{4}-\d{4,7}\b", v)
+                            if cve_search:
+                                cve = cve_search.group()
+                        except Exception as e:
+                            continue
+
                 installed_pkg = vuln["PkgName"] + "_" + vuln["InstalledVersion"]
 
                 package_list.append(installed_pkg)
 
-                cve = vuln["VulnerabilityID"] + "_" + vuln["Severity"].capitalize()
+                cve_sev = cve + "_" + vuln["Severity"].capitalize()
                 
-                cve_list.append(cve)
+                cve_list.append(cve_sev)
 
-                edges_list.append(installed_pkg + ' ' + cve)
+                edges_list.append(installed_pkg + ' ' + cve_sev)
 
     unique_pkgs = list(set(package_list))
 
