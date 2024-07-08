@@ -417,89 +417,38 @@ def docker_scan_formater(input_file,output_path,container_name):
 
     #TODO - Formalise formatting for versions across all data 
     if isinstance(data, dict):
-        vulns = data["vulnerabilities"]
+        
+        vulns = data["runs"][0]["tool"]["driver"]["rules"]
 
-        for i in range(0, len(vulns)):
-                name = vulns[i]["name"]
+        for i in vulns:
+            pkg_version = ""
 
-                version = vulns[i]["version"]
+            pkg_name_match = re.search(r'/([^/@]+)@', i["properties"]["purls"][0])
+            pkg_name = pkg_name_match.group(1)
+            pkg_version_match = re.search(r'@(\d+(\.\d+)+|\d+:\d+(\.\d+)+)', i["properties"]["purls"][0])
+            if pkg_version_match:
+                pkg_version = pkg_version_match.group(1)
 
-                if len(vulns[i]["identifiers"]["CVE"]) > 0:
+            pkg = pkg_name + "_" + pkg_version
 
-                    cve = vulns[i]["identifiers"]["CVE"][0] + "_" + vulns[i]["severity"].capitalize()
-                
-                else: 
-                    key_list = list(vulns[i]["identifiers"].keys())
+            cve_id = i["id"]
+            cve_severity = i["properties"]["tags"][0].capitalize()
 
-                    key_list.sort()
+            cve = cve_id + "_" + cve_severity
 
-                    for key in key_list:
+            package_list.append(pkg)
+            cve_list.append(cve)
+            edges_list.append(pkg + ' ' + cve)
+        
+    unique_pkgs = list(set(package_list))
 
-                        if len(vulns[i]["identifiers"][key]) > 0:
-                            
-                            cve = vulns[i]["identifiers"][key][0] + "_" + vulns[i]["severity"].capitalize()
-                            break
+    unique_cves = list(set(cve_list))
 
+    node_list = unique_pkgs + unique_cves
 
-                #if "+" in version:
-                #    version = version.split("+")[0]
+    node_list.append(container_name.upper())
 
-                if "/" in name:
-                    split_str = name.split("/")
-                        
-                    for item in split_str:
-                        pkg = item + "_" + version
-                        package_list.append(pkg)
-                        cve_list.append(cve)
-                        edges_list.append(pkg + ' ' + cve)
-                else:
-                    pkg = name + "_" + version
-                    package_list.append(pkg)
-                    cve_list.append(cve)
-                    edges_list.append(pkg + ' ' + cve)
-
-    else:
-        for i in range(0, len(data)):
-            vulns = data[i]["vulnerabilities"]
-            for i in range(0, len(vulns)):
-                name = vulns[i]["name"]
-
-                version = vulns[i]["version"]
-
-                
-                if len(vulns[i]["identifiers"]["CVE"]) > 0:
-
-                    cve = vulns[i]["identifiers"]["CVE"][0] + "_" + vulns[i]["severity"].capitalize()
-                
-                else: 
-                    key_list = list(vulns[i]["identifiers"].keys())
-
-                    key_list.sort()
-
-                    for key in key_list:
-
-                        if len(vulns[i]["identifiers"][key]) > 0:
-                            
-                            cve = vulns[i]["identifiers"][key][0] + "_" + vulns[i]["severity"].capitalize()
-                            break
-
-                if "+" in version:
-                    version = version.split("+")[0]
-
-                if "/" in name:
-                    split_str = name.split("/")
-                        
-                    for item in split_str:
-                        pkg = item + "_" + version
-                        package_list.append(pkg)
-                        cve_list.append(cve)
-                        edges_list.append(pkg + ' ' + cve)
-                else:
-                    pkg = name + "_" + version
-                    package_list.append(pkg)
-                    cve_list.append(cve)
-                    edges_list.append(pkg + ' ' + cve)
-
+    write_node_list(node_list,output_path)
     unique_pkgs = list(set(package_list))
 
     unique_cves = list(set(cve_list))
