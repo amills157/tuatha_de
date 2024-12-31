@@ -74,8 +74,8 @@ def node_data(container_image,node_edge_file_path,borvo_flag):
                         scanners.append("clair")
                     if "jfrog" in full_path and "jfrog" not in scanners:
                         scanners.append("jfrog")
-                    if "docker_scan" in full_path and "docker_scan" not in scanners:
-                        scanners.append("docker_scan")
+                    if "docker_scout" in full_path and "docker_scout" not in scanners:
+                        scanners.append("docker_scout")
                     if "grype" in full_path and "grype" not in scanners:
                         scanners.append("grype")
                     if "trivy" in full_path and "trivy" not in scanners:

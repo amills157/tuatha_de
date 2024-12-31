@@ -99,8 +99,8 @@ def create_node_egde_files(input_path,container_name,container_image,scanner,out
             elif scanner =="sysdig":
                 formater.sysdig_formater(input_path,output_path,container_name)
 
-            elif scanner =="docker_scan":
-                formater.docker_scan_formater(input_path,output_path,container_name)
+            elif scanner =="docker_scout":
+                formater.docker_scout_formater(input_path,output_path,container_name)
 
         elif scanner =="all":
 
@@ -133,10 +133,10 @@ def create_node_egde_files(input_path,container_name,container_image,scanner,out
                     scanner_output_path = os.path.join(output_path,"visualisation/node_edge_files/jfrog/{}".format(container_image))
                     formater.jfrog_formater(file_path,scanner_output_path,container_name)
 
-                elif "docker_scan" in file_path:
-                    print("Found a docker_scan file - Processing")
-                    scanner_output_path = os.path.join(output_path,"visualisation/node_edge_files/docker_scan/{}".format(container_image))
-                    formater.docker_scan_formater(file_path,scanner_output_path,container_name)
+                elif "docker_scout" in file_path:
+                    print("Found a docker_scout file - Processing")
+                    scanner_output_path = os.path.join(output_path,"visualisation/node_edge_files/docker_scout/{}".format(container_image))
+                    formater.docker_scout_formater(file_path,scanner_output_path,container_name)
                 
                 elif "grype" in file_path:
                     print("Found a grype file - Processing")

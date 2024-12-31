@@ -15,7 +15,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="CHANGEME")
     
     parser.add_argument("-report_dir", help="Directory folder which contains the report(s) or scan result(s) to read.\nIf not provided this will default to the 'container_scans' folder in the same root dir", default=os.path.join(dir_path,"container_scans"))
-    parser.add_argument("-format", help="The scanner tool used - Accepted values are:\nAll\nClair\nJfrog\nDocker_Scan\nGrype\n\Sysdig\nTrivy\nDefaults to 'all'\n", default="all")
+    parser.add_argument("-format", help="The scanner tool used - Accepted values are:\nAll\nClair\nJfrog\nDocker_Scout\nGrype\n\Sysdig\nTrivy\nDefaults to 'all'\n", default="all")
     parser.add_argument("-image", help="The container image file report to use - This will also be the data name used when plotting and the file name for the output, e.g. 'rabbitmq_3_9_13' \n", required = True)
     parser.add_argument("-container", help="The container / application name to use - This will be the central node name used when plotting, e.g. 'rabbitmq' \n")
     parser.add_argument("-update", type=bool, help="Will use the BOROVO plugin to fix impacted binaries (where possible) \n")
@@ -35,8 +35,8 @@ if __name__ == '__main__':
 
     container_image = container_image.replace("/","_").replace(":","_").replace(".","_")
 
-    while scanner not in ["jfrog", "docker_scan", "clair","grype","trivy", "sysdig", "all"]:
-        scanner = input("Not a valid scanner format.Accepted values are:\nClair\nJfrog\nDocker_Scan\nGrype\nTrivy\nSysdig\n")
+    while scanner not in ["jfrog", "docker_scout", "clair","grype","trivy", "sysdig", "all"]:
+        scanner = input("Not a valid scanner format.Accepted values are:\nClair\nJfrog\nDocker_Scout\nGrype\nTrivy\nSysdig\n")
 
     while vis_type not in ["single", "multi", "both"]:
         scanner = input("Not a valid visulisation format.Accepted values are:\nSingle\nMulti\nBoth\n")
@@ -61,7 +61,7 @@ if __name__ == '__main__':
             output_path = os.path.join(dir_path,"visualisation/node_edge_files/{}/{}".format(scanner,container_image))
 
             ext = dict(
-                json = ["clair","jfrog","docker_scan","trivy"],
+                json = ["clair","jfrog","docker_scout","trivy"],
                 txt = ["grype"]
             )
             file_ext = ""

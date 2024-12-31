@@ -96,7 +96,7 @@ for i in $(cat docker_images.txt); do
   k="${j//:/_}"
   l="${k////_}"
 
-  docker scan --json $i > docker_scan/scans/$l.json
+  docker scout --json $i > docker_scout/scans/$l.json
 
 done
 ```
@@ -194,7 +194,7 @@ usage: ogma.py [-h] [-input INPUT] [-format FORMAT] -image IMAGE [-container CON
 ```
 
  - `report_dir` = Directory folder which contains the the reports or scan result(s) to read. If not provided this will default to the 'container_scans' folder in the same root dir
-  - `format` = The scanner tool used - Accepted values are: All, Clair, Dagda, Docker_Scan, Grype,Sysdig, Trivy. Defaults to 'all'
+  - `format` = The scanner tool used - Accepted values are: All, Clair, Dagda, Docker_Scout, Grype,Sysdig, Trivy. Defaults to 'all'
   - `image` = The container image file report to use - This will also be the data name used when plotting and the file name for the output, e.g. 'rabbitmq_3_9_13'
   - `container` = The container / application name to use - This will be the central node name used when plotting, e.g. `rabbitmq`
   - `update` = Will use the BOROVO plugin to fix impacted binaries (where possible)

@@ -15,7 +15,7 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_fla
 
         node_input, edge_input, count, container = vis_single.node_data(container_image, scanner, node_edge_file_path,nofix_show,borvo_flag)
 
-        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container)
+        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path)
 
         vis_single.node_link_plot(fig, container_image, scanner, vuln_count,vis_output_path)
 

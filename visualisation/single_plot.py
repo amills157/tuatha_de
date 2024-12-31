@@ -3,6 +3,8 @@ import os
 import json
 import sqlite3
 import requests
+
+import pandas as pd
 import networkx as nx
 import plotly.io as plt_io
 import cve_searchsploit as CS
@@ -165,11 +167,13 @@ def node_data_parse(node_input,edge_input,nofix_show):
 
     return node_input, parsed_edge_input
 
-def node_link_create_traces(node_input, edge_input, count, scanner, container):
+def node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path):
 
     my_graph = nx.Graph()
 
     blind_traces = []
+
+    csv_output = pd.DataFrame(columns=['Vulnerability', 'Severity', 'Attack Vector', 'Exploits', 'Dicription'])
 
     edges = nx.read_edgelist(edge_input)
 
@@ -259,6 +263,8 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container):
     #for node in my_graph.nodes():
 
         node_size = (node_input.count(node) * 10)
+
+        av = "Unknown"
         
         x, y = pos[node]
         if any(map(str(node).__contains__, vuln_types)):
@@ -301,8 +307,6 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container):
             av_regex=r"(?<=\bAV:).{1}"
 
             cursor = conn.execute("SELECT impact_vector from cves where id = '"+cve_assignment+"'")
-
-            av = "Unknown"
             
             for row in cursor:
                 if row[0]:
@@ -347,8 +351,12 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container):
             vuln_node["{}_marker".format(string_format)].append(marker)
             vuln_node["{}_size".format(string_format)].append(node_size)
 
+            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Dicription': ""}, ignore_index=True)
+
         elif any(map(str(node).__contains__, vuln_types)):
             marker = "-open"
+
+            exploits = ""
 
             vuln_node["other_x"].append(x)
             vuln_node["other_y"].append(y)
@@ -356,9 +364,13 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container):
             vuln_node["other_colour"].append(vuln_colour)
             if "EBID" in str(node):
                 marker = ""
+                exploits = "Yes"
             vuln_node["other_marker"].append("triangle-up" + marker)
             vuln_node["other_size"].append(node_size)
             legend_items["Other Vuln"] = ["triangle-up","other"]
+
+            #csv_output.append(node + "_" + av)
+            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Dicription': ""}, ignore_index=True)
 
         else: 
             if str(node).strip() == container.strip():
@@ -372,12 +384,15 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container):
                 package_node_opacity.append(0.7)
                 package_node_colour.append("white")
             package_node_x.append(x)
-            package_node_y.append(y)
-            
+            package_node_y.append(y)    
+
+        
 
     conn.close()
 
     visible_traces = []
+
+    csv_output.to_csv(vis_output_path + "/csv_output/" +container_image + ".csv")
 
     for item in vuln_trace_types:
 

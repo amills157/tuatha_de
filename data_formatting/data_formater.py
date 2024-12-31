@@ -396,7 +396,7 @@ def sysdig_formater(input_file,output_path,container_name,container_image):
     write_edge_list(edges_list,output_path)
 
 
-def docker_scan_formater(input_file,output_path,container_name):
+def docker_scout_formater(input_file,output_path,container_name):
 
     if os.stat(input_file).st_size == 0:
         return
