@@ -6,5 +6,6 @@
 *.sh
 *.html
 *.DS_Store
+*.xl*
 __pycache__/
 !requirements.txt

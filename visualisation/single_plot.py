@@ -173,7 +173,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
 
     blind_traces = []
 
-    csv_output = pd.DataFrame(columns=['Vulnerability', 'Severity', 'Attack Vector', 'Exploits', 'Dicription'])
+    csv_output = pd.DataFrame(columns=['Vulnerability', 'Severity', 'Attack Vector', 'Exploits', 'Description'])
 
     edges = nx.read_edgelist(edge_input)
 
@@ -351,7 +351,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
             vuln_node["{}_marker".format(string_format)].append(marker)
             vuln_node["{}_size".format(string_format)].append(node_size)
 
-            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Dicription': ""}, ignore_index=True)
+            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}, ignore_index=True)
 
         elif any(map(str(node).__contains__, vuln_types)):
             marker = "-open"
@@ -370,7 +370,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
             legend_items["Other Vuln"] = ["triangle-up","other"]
 
             #csv_output.append(node + "_" + av)
-            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Dicription': ""}, ignore_index=True)
+            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}, ignore_index=True)
 
         else: 
             if str(node).strip() == container.strip():
