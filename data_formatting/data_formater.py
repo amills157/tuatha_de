@@ -198,15 +198,24 @@ def grype_formater(input_file,output_path, container_name):
     if os.stat(input_file).st_size == 0:
         return
 
-    df = pd.read_csv(input_file, sep=r'\s{2,}', engine='python')
+    df = pd.read_fwf(input_file)
 
-    if "No vulnerabilities found" in df.columns:
+    df['FIXED-IN'] = df['FIXED'].astype(str).str.strip() + ' ' + df['IN'].astype(str).str.strip()
+
+    # Drop the old split columns
+    df.drop(columns=['FIXED', 'IN'], inplace=True)
+
+    if ' '.join(df.columns) == "No vulnerabilities found":
         return
 
     # New column  that we don't need / messes with the previously established setup
     #df = df.drop(['TYPE'], axis = 1)
 
     # FIXED-IN     VULNERABILITY     SEVERITY
+
+    print(df.columns)
+
+    print(df.head(5))
 
     if None in df['SEVERITY'].values:
 
@@ -236,7 +245,8 @@ def grype_formater(input_file,output_path, container_name):
                 df.loc[idx, 'FIXED-IN'] = None
 
     for idx, row in df.iterrows():
-        if row['FIXED-IN'] and "won't fix" in row['FIXED-IN']:
+        fixed_in = row['FIXED-IN']
+        if isinstance(fixed_in, str) and "won't fix" in fixed_in:
             row['SEVERITY'] = "{}_NOFIX".format(row['SEVERITY'])
     
     df = df.drop(['FIXED-IN'], axis = 1)

@@ -331,7 +331,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, f
                 marker = "hash" + marker
                 legend_items["Reserved CVE"] = ["hash","unknown"]
 
-            node_text =""" <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={}">  </a>""".format(str(node),)
+            node_text =""" <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name={}">  </a>""".format(str(cve_assignment),)
 
             vuln_node["{}_x".format(string_format)].append(x)
             vuln_node["{}_y".format(string_format)].append(y)
