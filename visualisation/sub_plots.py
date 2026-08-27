@@ -497,9 +497,9 @@ def node_link_plot(container_image, figures,vuln_count,scanners,per_scanner_vuln
                 x=0.5,
                 y=0.95,
                 xanchor="center",
-                yanchor="top"
+                yanchor="top",
+                font=dict(size=16)
             ),
-        titlefont_size=16,
         showlegend=False,
         hovermode="closest",
         #margin=dict(b=20,l=5,r=5,t=40),
