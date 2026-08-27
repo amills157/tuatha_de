@@ -351,7 +351,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
             vuln_node["{}_marker".format(string_format)].append(marker)
             vuln_node["{}_size".format(string_format)].append(node_size)
 
-            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}, ignore_index=True)
+            csv_output = pd.concat([csv_output, pd.DataFrame([{'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}])], ignore_index=True)
 
         elif any(map(str(node).__contains__, vuln_types)):
             marker = "-open"
@@ -370,7 +370,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
             legend_items["Other Vuln"] = ["triangle-up","other"]
 
             #csv_output.append(node + "_" + av)
-            csv_output = csv_output.append({'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}, ignore_index=True)
+            csv_output = pd.concat([csv_output, pd.DataFrame([{'Vulnerability': str(node).split('_')[0], 'Severity': str(node).split('_')[1], 'Attack Vector': av, 'Exploits': exploits, 'Description': ""}])], ignore_index=True)
 
         else: 
             if str(node).strip() == container.strip():
@@ -470,9 +470,9 @@ def node_link_plot(fig, container_image, scanner, vuln_count,vis_output_path):
             x=0.5,
             y=0.95,
             xanchor="center",
-            yanchor="top"
+            yanchor="top",
+            font=dict(size=16)
         ),
-        titlefont_size=16,
         showlegend=True,
         hovermode="closest",
         margin=dict(b=20,l=5,r=5,t=40),

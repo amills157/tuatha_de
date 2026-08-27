@@ -61,7 +61,14 @@ def normalize_row(row):
 
 
 def merge_preferred(existing_value, new_value):
-    return existing_value if existing_value.strip() else new_value.strip()
+    existing_value = (existing_value or "").strip()
+    new_value = (new_value or "").strip()
+
+    if existing_value and existing_value != "Unknown":
+        return existing_value
+    if new_value:
+        return new_value
+    return existing_value
 
 
 def merge_richer_text(old_value, new_value):
@@ -121,6 +128,7 @@ def build_alias_map(rows_by_canon):
 
 def load_previous_master(path):
     previous_rows = {}
+    alias_map = {}
 
     if not os.path.exists(path):
         return previous_rows
@@ -129,20 +137,53 @@ def load_previous_master(path):
         reader = csv.DictReader(master_file)
         for row in reader:
             row = normalize_row(row)
-            canon_id = canonical_vuln_id(row['Vulnerability'])
-            if not canon_id:
+            row_ids = extract_ids(row['Vulnerability'])
+            if not row_ids:
                 continue
 
-            if canon_id in previous_rows:
-                existing = previous_rows[canon_id]
+            matched_canons = []
+            for vuln_id in row_ids:
+                canon = alias_map.get(vuln_id)
+                if canon and canon not in matched_canons:
+                    matched_canons.append(canon)
+
+            if matched_canons:
+                resolved_canon = matched_canons[0]
+            else:
+                resolved_canon = canonical_vuln_id(row['Vulnerability'])
+                if not resolved_canon:
+                    continue
+
+            if resolved_canon not in previous_rows:
+                row['Vulnerability'] = "\n".join(row_ids)
+                previous_rows[resolved_canon] = row
+            else:
+                existing = previous_rows[resolved_canon]
                 existing['Vulnerability'] = combine_ids(existing['Vulnerability'], row['Vulnerability'])
                 existing['Severity'] = merge_preferred(existing['Severity'], row['Severity']) or 'Unknown'
                 existing['Attack Vector'] = merge_preferred(existing['Attack Vector'], row['Attack Vector']) or 'Unknown'
                 existing['Exploits'] = merge_richer_text(existing['Exploits'], row['Exploits'])
                 existing['Description'] = merge_richer_text(existing['Description'], row['Description'])
                 existing['Image'] = combine_multiline_unique(existing['Image'], row['Image'])
-            else:
-                previous_rows[canon_id] = row
+
+            # If this row bridges multiple canon groups, collapse them
+            for extra_canon in matched_canons[1:]:
+                if extra_canon == resolved_canon or extra_canon not in previous_rows:
+                    continue
+
+                existing = previous_rows[resolved_canon]
+                duplicate = previous_rows.pop(extra_canon)
+
+                existing['Vulnerability'] = combine_ids(existing['Vulnerability'], duplicate['Vulnerability'])
+                existing['Severity'] = merge_preferred(existing['Severity'], duplicate['Severity']) or 'Unknown'
+                existing['Attack Vector'] = merge_preferred(existing['Attack Vector'], duplicate['Attack Vector']) or 'Unknown'
+                existing['Exploits'] = merge_richer_text(existing['Exploits'], duplicate['Exploits'])
+                existing['Description'] = merge_richer_text(existing['Description'], duplicate['Description'])
+                existing['Image'] = combine_multiline_unique(existing['Image'], duplicate['Image'])
+
+            # Refresh alias map from merged row
+            for vuln_id in extract_ids(previous_rows[resolved_canon]['Vulnerability']):
+                alias_map[vuln_id] = resolved_canon
 
     return previous_rows
 

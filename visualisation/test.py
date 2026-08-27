@@ -73,8 +73,10 @@ node_trace.text = node_text
 
 fig = go.Figure(data=[edge_trace, node_trace],
             layout=go.Layout(
-            title='<br>Network graph made with Python',
-            titlefont_size=16,
+            title=dict(
+                text='<br>Network graph made with Python',
+                font=dict(size=16)
+            ),
             showlegend=False,
             hovermode='closest',
             margin=dict(b=20,l=5,r=5,t=40),
