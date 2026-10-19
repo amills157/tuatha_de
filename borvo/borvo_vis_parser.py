@@ -47,7 +47,7 @@ def node_data(container_image,scan_folder):
     return node_input, edge_input, scanners, count, last_line
 
 
-def borvo_vis_wrapper(container_image,dir_path):
+def borvo_vis_wrapper(container_image,dir_path,nvd_api_key=None):
 
     scan_folder = os.path.join(dir_path,"visualisation/node_edge_files/")
 
@@ -86,7 +86,7 @@ def borvo_vis_wrapper(container_image,dir_path):
         final_loop = False
         if i == (len(node_input) -1):
             final_loop= True
-        fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container,0,final_loop,True)
+        fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container,final_loop,True,nvd_api_key=nvd_api_key)
         figures.append(fig)
         vuln_sum = 0
         for key in cve_keys:

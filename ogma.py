@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument("-refresh", type=bool, help="Will re-create the node and egdes from the container scan results avaliable - By default visulisations are created from existing node and edge files (when / where they exist) \n", default=False)
     parser.add_argument("-vis", help="Select the visualisation output\nSingle (node), Multi (node) or Both\nThis defaults to 'both' for all scanners and single for a selected format", default="both")
     parser.add_argument("-nofix", help="Select to show CVEs which have been listed as won't / no fix. Accepted values are:\nShow\nNone\nCompare\ndefaults to 'None'", default="None")
+    parser.add_argument("--nvd-api-key", help="API key for the NVD attack-vector fallback")
 
     args = parser.parse_args()
     input_path = args.report_dir
@@ -48,7 +49,7 @@ if __name__ == '__main__':
 
         data_parser.create_node_egde_files(borvo_input_path,container_name,container_image,scanner,dir_path,borvo_flag)
 
-        borvo_vis_parser.borvo_vis_wrapper(container_image,dir_path)
+        borvo_vis_parser.borvo_vis_wrapper(container_image,dir_path,nvd_api_key=args.nvd_api_key)
 
     else:
     
@@ -81,4 +82,4 @@ if __name__ == '__main__':
             else:
                 vis_type = "single"
 
-        vis_parser.plot_create(vis_type,container_image,scanner,dir_path,nofix_show,borvo_flag)
+        vis_parser.plot_create(vis_type,container_image,scanner,dir_path,nofix_show,borvo_flag,nvd_api_key=args.nvd_api_key)

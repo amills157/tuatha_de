@@ -3,7 +3,7 @@ import csv
 import visualisation.single_plot as vis_single
 import visualisation.sub_plots as vis_multi
 
-def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_flag):
+def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_flag,nvd_api_key=None):
 
     node_edge_file_path = os.path.join(dir_path,"visualisation/node_edge_files")
 
@@ -15,7 +15,7 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_fla
 
         node_input, edge_input, count, container = vis_single.node_data(container_image, scanner, node_edge_file_path,nofix_show,borvo_flag)
 
-        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path)
+        fig, vuln_count = vis_single.node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path,nvd_api_key=nvd_api_key)
 
         vis_single.node_link_plot(fig, container_image, scanner, vuln_count,vis_output_path)
 
@@ -52,7 +52,7 @@ def plot_create(vis_type,container_image, scanner, dir_path,nofix_show,borvo_fla
             final_loop = False
             if i == (len(node_input) -1):
                 final_loop= True
-            fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container,final_loop,False)
+            fig, temp_dict = vis_multi.node_link_create_traces(node_input[i], edge_input[i], count, scanners[i], container,final_loop,False,nvd_api_key=nvd_api_key)
             figures.append(fig)
             vuln_sum = 0
             for key in cve_keys:
