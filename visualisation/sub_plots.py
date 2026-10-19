@@ -67,8 +67,8 @@ def nvd_attack_vector(cve_assignment, nvd_api_key=None):
                         field = "accessVector" if version == "cvssMetricV2" else "attackVector"
                         av = cvss.get(field) or "Unknown"
                         break
-        except (requests.RequestException, ValueError, KeyError) as e:
-            raise RuntimeError("NVD lookup failed for {} ({})".format(cve_assignment, type(e).__name__)) from None
+        except (requests.RequestException, ValueError, KeyError):
+            return "Unknown"
 
         with cache:
             cache.execute(
