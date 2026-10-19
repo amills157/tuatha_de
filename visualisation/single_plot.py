@@ -2,7 +2,6 @@ import re
 import os
 import json
 import sqlite3
-import requests
 
 import pandas as pd
 import networkx as nx
@@ -13,6 +12,7 @@ import plotly.graph_objects as go
 from tqdm import tqdm
 from pathlib import Path
 from plotly.subplots import make_subplots
+from visualisation.sub_plots import nvd_attack_vector
 
 # create our custom_dark theme from the plotly_dark template
 plt_io.templates["custom_dark"] = plt_io.templates["plotly_dark"]
@@ -167,7 +167,7 @@ def node_data_parse(node_input,edge_input,nofix_show):
 
     return node_input, parsed_edge_input
 
-def node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path):
+def node_link_create_traces(node_input, edge_input, count, scanner, container, container_image, vis_output_path,nvd_api_key=None):
 
     my_graph = nx.Graph()
 
@@ -319,14 +319,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, c
                         av = "NETWORK"
 
             if av == "Unknown":
-                try:
-                    r = requests.get("https://cve.circl.lu/api/cve/"+cve_assignment) 
-                    # NULL / missing CVE entries
-                    if r.json():
-                        av = r.json()["access"]["vector"] 
-                # Entries without a vector
-                except (KeyError, ValueError) as e:
-                    pass
+                av = nvd_attack_vector(cve_assignment, nvd_api_key)
 
             if av == "LOCAL":
                 string_format = "local"

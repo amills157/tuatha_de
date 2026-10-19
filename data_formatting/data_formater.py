@@ -200,10 +200,10 @@ def grype_formater(input_file,output_path, container_name):
 
     df = pd.read_fwf(input_file)
 
-    df['FIXED-IN'] = df['FIXED'].astype(str).str.strip() + ' ' + df['IN'].astype(str).str.strip()
+    # df['FIXED-IN'] = df['FIXED'].astype(str).str.strip() + ' ' + df['IN'].astype(str).str.strip()
 
-    # Drop the old split columns
-    df.drop(columns=['FIXED', 'IN'], inplace=True)
+    # # Drop the old split columns
+    # df.drop(columns=['FIXED', 'IN'], inplace=True)
 
     if ' '.join(df.columns) == "No vulnerabilities found":
         return
@@ -213,9 +213,12 @@ def grype_formater(input_file,output_path, container_name):
 
     # FIXED-IN     VULNERABILITY     SEVERITY
 
-    print(df.columns)
+    # print(df.columns)
 
-    print(df.head(5))
+    # print(df.head(5))
+
+    if 'FIXED IN' not in df.columns:
+        df['FIXED IN'] = ''
 
     if None in df['SEVERITY'].values:
 
@@ -223,15 +226,15 @@ def grype_formater(input_file,output_path, container_name):
             if row['SEVERITY'] is None:
                 df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
                 df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
-                df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
-                df.loc[idx, 'FIXED-IN'] = None
+                df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED IN']
+                df.loc[idx, 'FIXED IN'] = None
             
     if df['SEVERITY'].isna().all():
         for idx, row in df.iterrows():
             df.loc[idx, 'SEVERITY'] = df.loc[idx, 'VULNERABILITY']
             df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
-            df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED-IN']
-            df.loc[idx, 'FIXED-IN'] = None
+            df.loc[idx, 'TYPE'] = df.loc[idx, 'FIXED IN']
+            df.loc[idx, 'FIXED IN'] = None
 
 
     # If after the above fix we still have issues it's related to the installed value
@@ -242,14 +245,14 @@ def grype_formater(input_file,output_path, container_name):
                 df.loc[idx, 'VULNERABILITY'] = df.loc[idx, 'TYPE']
                 df.loc[idx, 'TYPE'] = df.loc[idx, 'INSTALLED']
                 df.loc[idx, 'INSTALLED'] = ''
-                df.loc[idx, 'FIXED-IN'] = None
+                df.loc[idx, 'FIXED IN'] = None
 
     for idx, row in df.iterrows():
-        fixed_in = row['FIXED-IN']
+        fixed_in = row['FIXED IN']
         if isinstance(fixed_in, str) and "won't fix" in fixed_in:
             row['SEVERITY'] = "{}_NOFIX".format(row['SEVERITY'])
     
-    df = df.drop(['FIXED-IN'], axis = 1)
+    df = df.drop(['FIXED IN'], axis = 1)
 
     df['PACKAGE'] = df['NAME'] + "_" + df['INSTALLED']
 

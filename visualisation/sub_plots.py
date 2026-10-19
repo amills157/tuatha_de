@@ -3,12 +3,14 @@ import os
 import json
 import sqlite3
 import requests
+import time
 import networkx as nx
 import plotly.io as plt_io
 import cve_searchsploit as CS
 import plotly.graph_objects as go
 
 from tqdm import tqdm
+from contextlib import closing
 from pathlib import Path
 from plotly.subplots import make_subplots
 
@@ -28,6 +30,53 @@ plt_io.renderers.default = "firefox"
 CS.update_db()
 
 legend_items = {}
+
+def nvd_attack_vector(cve_assignment, nvd_api_key=None):
+    cache_path = Path.home() / ".cache" / "ogma" / "nvd.sqlite"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with closing(sqlite3.connect(str(cache_path))) as cache:
+        with cache:
+            cache.execute(
+                "CREATE TABLE IF NOT EXISTS attack_vectors "
+                "(cve_id TEXT PRIMARY KEY, attack_vector TEXT NOT NULL, fetched_at REAL NOT NULL)"
+            )
+        row = cache.execute(
+            "SELECT attack_vector, fetched_at FROM attack_vectors WHERE cve_id = ?",
+            (cve_assignment,)
+        ).fetchone()
+        if row and (row[0] != "Unknown" or time.time() - row[1] < 86400):
+            return row[0]
+
+        av = "Unknown"
+        try:
+            time.sleep(0.7 if nvd_api_key else 6.1)
+            r = requests.get(
+                "https://services.nvd.nist.gov/rest/json/cves/2.0",
+                headers={"apiKey": nvd_api_key} if nvd_api_key else {},
+                params={"cveId": cve_assignment},
+                timeout=30
+            )
+            r.raise_for_status()
+            vulnerabilities = r.json().get("vulnerabilities", [])
+            if vulnerabilities:
+                metrics = vulnerabilities[0]["cve"].get("metrics", {})
+                for version in ("cvssMetricV40", "cvssMetricV31", "cvssMetricV30", "cvssMetricV2"):
+                    if metrics.get(version):
+                        cvss = metrics[version][0].get("cvssData", {})
+                        field = "accessVector" if version == "cvssMetricV2" else "attackVector"
+                        av = cvss.get(field) or "Unknown"
+                        break
+        except (requests.RequestException, ValueError, KeyError):
+            return "Unknown"
+
+        with cache:
+            cache.execute(
+                "INSERT OR REPLACE INTO attack_vectors (cve_id, attack_vector, fetched_at) "
+                "VALUES (?, ?, ?)",
+                (cve_assignment, av, time.time())
+            )
+        return av
 
 def create_vuln_trace(trace_type,vuln_node):
 
@@ -101,7 +150,7 @@ def node_data(container_image,node_edge_file_path,borvo_flag):
 
     return node_input, edge_input, scanners, count, last_line
 
-def node_link_create_traces(node_input, edge_input, count, scanner, container, final_loop, borvo_flag):
+def node_link_create_traces(node_input, edge_input, count, scanner, container, final_loop, borvo_flag,nvd_api_key=None):
     global legend_items
 
     my_graph = nx.Graph()
@@ -309,14 +358,7 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, f
                         av = "NETWORK"
 
             if av == "Unknown":
-                try:
-                    r = requests.get("https://cve.circl.lu/api/cve/"+cve_assignment) 
-                    # NULL / missing CVE entries
-                    if r.json():
-                        av = r.json()["access"]["vector"] 
-                # Entries without a vector
-                except KeyError as e:
-                    pass
+                av = nvd_attack_vector(cve_assignment, nvd_api_key)
 
             if av == "LOCAL":
                 string_format = "local"
@@ -370,8 +412,8 @@ def node_link_create_traces(node_input, edge_input, count, scanner, container, f
             package_node_colour.append("white")
             legend_items["Packages"] = ["circle","packages"]
             
-    conn.close()
 
+    conn.close()
     visible_traces = []
 
     for item in vuln_trace_types:
