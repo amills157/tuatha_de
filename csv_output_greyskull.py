@@ -64,6 +64,14 @@ def merge_preferred(existing_value, new_value):
     return existing_value if existing_value.strip() else new_value.strip()
 
 
+def merge_attack_vector(preferred_value, fallback_value):
+    for value in (preferred_value, fallback_value):
+        value = (value or "").strip()
+        if value and value.casefold() != "unknown":
+            return value
+    return "Unknown"
+
+
 def merge_richer_text(old_value, new_value):
     old_value = (old_value or "").strip()
     new_value = (new_value or "").strip()
@@ -137,7 +145,7 @@ def load_previous_master(path):
                 existing = previous_rows[canon_id]
                 existing['Vulnerability'] = combine_ids(existing['Vulnerability'], row['Vulnerability'])
                 existing['Severity'] = merge_preferred(existing['Severity'], row['Severity']) or 'Unknown'
-                existing['Attack Vector'] = merge_preferred(existing['Attack Vector'], row['Attack Vector']) or 'Unknown'
+                existing['Attack Vector'] = merge_attack_vector(existing['Attack Vector'], row['Attack Vector'])
                 existing['Exploits'] = merge_richer_text(existing['Exploits'], row['Exploits'])
                 existing['Description'] = merge_richer_text(existing['Description'], row['Description'])
                 existing['Image'] = combine_multiline_unique(existing['Image'], row['Image'])
@@ -188,7 +196,7 @@ def build_current_rows(csv_file_path, previous_alias_map):
                     existing = current_rows[resolved_canon]
                     existing['Vulnerability'] = combine_ids(existing['Vulnerability'], row['Vulnerability'])
                     existing['Severity'] = merge_preferred(existing['Severity'], row['Severity']) or 'Unknown'
-                    existing['Attack Vector'] = merge_preferred(existing['Attack Vector'], row['Attack Vector']) or 'Unknown'
+                    existing['Attack Vector'] = merge_attack_vector(existing['Attack Vector'], row['Attack Vector'])
                     existing['Exploits'] = merge_richer_text(existing['Exploits'], row['Exploits'])
                     existing['Description'] = merge_richer_text(existing['Description'], row['Description'])
                     existing['Image'] = combine_images(existing['Image'], image_name)
@@ -212,7 +220,7 @@ def inherit_previous_metadata(current_rows, previous_rows):
 
         row['Vulnerability'] = combine_ids(old_row['Vulnerability'], row['Vulnerability'])
         row['Severity'] = merge_preferred(old_row['Severity'], row['Severity']) or 'Unknown'
-        row['Attack Vector'] = merge_preferred(old_row['Attack Vector'], row['Attack Vector']) or 'Unknown'
+        row['Attack Vector'] = merge_attack_vector(row['Attack Vector'], old_row['Attack Vector'])
         row['Exploits'] = merge_richer_text(old_row['Exploits'], row['Exploits'])
         row['Description'] = merge_richer_text(old_row['Description'], row['Description'])
 
